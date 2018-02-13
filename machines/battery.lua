@@ -1,18 +1,23 @@
-minetest.register_node("machinery:machinery_battery", {
+minetest.register_node("tech_reborn:tech_reborn_battery", {
     description = "Battery",
     tiles = {
-	  	"machinery_machine.png",
-	  	"machinery_machine.png",
-	  	"machinery_machine.png^machinery_battery.png",
-	  	"machinery_machine.png^machinery_battery.png",
-	  	"machinery_machine.png^machinery_battery.png",
-	    "machinery_machine.png^machinery_battery.png",
+	  	"tech_reborn_machine.png",
+	  	"tech_reborn_machine.png",
+	  	"tech_reborn_machine.png^tech_reborn_battery.png",
+	  	"tech_reborn_machine.png^tech_reborn_battery.png",
+	  	"tech_reborn_machine.png^tech_reborn_battery.png",
+	    "tech_reborn_machine.png^tech_reborn_battery.png",
   	},
   	paramtype2 = "facedir",
-    is_ground_content = true,
-    groups = {dig_immediate = 3, oddly_breakable_by_hand = 1, machine = 1},
+    on_construct = function(pos)
+      tech_reborn.wire.recalcModels(pos)
+    end,
+    after_destruct = function(pos)
+      tech_reborn.wire.recalcModels(pos)
+    end,
+    groups = {cracky = 1, oddly_breakable_by_hand = 1, machine = 1, wired_node = 1},
     sounds = default.node_sound_metal_defaults(),
-    machinery_update = function(pos)
-      machinery.pushAdjacentME(pos, 50)
+    machine_update = function(pos)
+      tech_reborn.pushAdjacentEnergy(pos, 50)
     end,
 })

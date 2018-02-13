@@ -1,6 +1,7 @@
-machinery = {}
+tech_reborn = {}
 
-local path = minetest.get_modpath('machinery')
-dofile(path .. "/wires/init.lua")
+local path = minetest.get_modpath('tech_reborn')
+dofile(path .. "/energy/init.lua")
 dofile(path .. "/helpers.lua")
 dofile(path .. "/machines/init.lua")
+dofile(path .. "/tool/init.lua")
