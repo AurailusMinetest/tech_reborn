@@ -1,8 +1,10 @@
-<h1>Tech Reborn</h1>
+# Tech Reborn
 
 A new technic mod that adds exciting machines to your minetes world.
 
-<h2>Credits:</h2>
+## Credits
 
-<h3>Aurailus</h3>
+### Aurailus
 Mod Author
+### Harry
+Came up with the name
