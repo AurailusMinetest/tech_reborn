@@ -1,3 +1,20 @@
+local function get_connect(pos_a, pos_b)
+	local def = minetest.registered_nodes[minetest.get_node(pos_b).name]
+	local base_node = def._base_node
+	if minetest.get_item_group(minetest.get_node(pos_a).name, "wire_connect") > 0 then
+		return true
+	end
+	if minetest.get_item_group(minetest.get_node(pos_a).name, "wire") > 0 then
+		local def = minetest.registered_nodes[minetest.get_node(pos_a).name]
+		if def._base_node == base_node then
+			return true
+		else
+			return false
+		end
+	end
+	return false
+end
+
 function tech_reborn.wire.recalcModels(pos)
 	local update = tech_reborn.getAdjacent(pos)
 	table.insert(update, pos)
@@ -9,6 +26,8 @@ function tech_reborn.wire.recalcModels(pos)
 end
 
 function tech_reborn.wire.setModel(pos)
+	tech_reborn.wire.removeIO(pos)
+	
 	local wires = {}
 	local adjacent = tech_reborn.getAdjacent(pos)
 
@@ -19,17 +38,17 @@ function tech_reborn.wire.setModel(pos)
 	if not base then return false end
 	
 	for i = 3, #adjacent do
-		if minetest.get_item_group(minetest.get_node(adjacent[i]).name, "wired_node") > 0 then
+		if get_connect(adjacent[i], pos) then
 			wires[i - 2] = true
 		else wires[i - 2] = false end
 	end
 
 	local suffix = ""
-	if minetest.get_item_group(minetest.get_node(adjacent[1]).name, "wired_node") > 0 then
-		if minetest.get_item_group(minetest.get_node(adjacent[2]).name, "wired_node") > 0 then
+	if get_connect(adjacent[1], pos) then
+		if get_connect(adjacent[2], pos) then
 			suffix = "_ud"
 		else suffix = "_u" end
-	elseif minetest.get_item_group(minetest.get_node(adjacent[2]).name, "wired_node") > 0 then
+	elseif get_connect(adjacent[2], pos) then
 		suffix = "_d"
 	end
 

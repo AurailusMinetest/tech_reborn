@@ -20,21 +20,6 @@ local heights = {
 }
 
 function tech_reborn.register_wires(name, data)
-
-	-- register_wire(name, data, nodebox, visible) -- Base Node
-
-	-- -- Add Nubs
-	-- table.insert(nodebox, {-data.width-0.0625, -data.width-0.0625, -data.width-0.0625, 
-	-- 										data.width+0.0625, data.width+0.0625, data.width+0.0625})
-
-	-- local tex = data.texture
-	-- data.tex_insulated = tex .. "^tech_reborn_import_6"
-	-- register_wire(name .. "_import", data, nodebox, visible)
-
-	-- local tex = data.texture
-	-- data.texture = tex .. "^tech_reborn_export_6"
-	-- register_wire(name .. "_export", data, nodebox, visible)
-
 	for insulated = 0, 1 do
 
 		local tex = data.tex_base
@@ -46,79 +31,58 @@ function tech_reborn.register_wires(name, data)
 
 		for hname, hbox in pairs(heights) do
 			for dname, dbox in pairs(directions) do
-				for mode = 0, 2 do
-					local mstring = ""
-					local estate = "none"
-					local inexoverlay = ""
 
-					local nodebox = table.copy(dbox)
-					table.insert(nodebox, table.copy(hbox))
+				if hname == "_" then hname = "" end
+				if dname == "_" then dname = "" end
 
-					local groups = {oddly_breakable_by_hand = 1, wire = 1, snappy = 3, wired_node = 1}
-					-- if not visible then
-					-- 	groups.not_in_creative_inventory = 1
-					-- end
-					groups[data.voltage] = 1
-					if hname == "_" then hname = "" end
-					if dname == "_" then dname = "" end
+				local nodebox = table.copy(dbox)
+				table.insert(nodebox, table.copy(hbox))
 
-					if mode > 0 then
-						table.insert(nodebox, {-(data.size+2)/16/2, -(data.size+2)/16/2, -(data.size+2)/16/2,
-												(data.size+2)/16/2, (data.size+2)/16/2, (data.size+2)/16/2})
-					end
-					if mode == 1 then
-						
-						mstring = "_import"
-						estate = "import"
-						groups.import = 1
-						inexoverlay = "^tech_reborn_import_" .. (data.size+2) .. ".png"
-					
-					elseif mode == 2 then
+				local groups = {oddly_breakable_by_hand = 1, wire = 1, snappy = 3, wired_node = 1}
 
-						mstring = "_export"
-						estate = "export"
-						groups.export = 1
-						inexoverlay = "^tech_reborn_export_" .. (data.size+2) .. ".png"
-					
-					end
+				if not (dname == "_line" and hname == "") then
+					groups.not_in_creative_inventory = 1
+				end
+				
+				groups[data.voltage] = 1
 
-					local cname = name .. mstring .. dname .. hname
+				local cname = name  .. dname .. hname
 
-					--Replace 1 with width values
-					for i = 1, #nodebox do
-						for j = 1, #nodebox[i] do
-							local val = nodebox[i][j]
-							if val == 1 then val = data.size/16/2
-							elseif val == -1 then val = -data.size/16/2 end
-							nodebox[i][j] = val
-						end 
-					end
-
-					minetest.register_node("tech_reborn:" .. cname, {
-						description = data.description,
-						tiles = {tex .. inexoverlay},
-						groups = groups,
-						sounds = default.node_sound_metal_defaults(),
-						on_construct = tech_reborn.wire.constructWire,
-						on_destruct = tech_reborn.wire.removeWire,
-						on_rightclick = tech_reborn.wire.changeState,
-						paramtype2 = "facedir",
-						drawtype = "nodebox",
-						paramtype = "light",
-						node_box = {
-							type = "fixed",
-							fixed = nodebox
-						},
-						_base_node = "tech_reborn:" .. name,
-						_base_name = "tech_reborn:" .. name .. mstring,
-						_export_state = estate,
-						_voltage = data.voltage,
-						drop = "tech_reborn:" .. name .. "_line",
-						node_placement_prediction = "tech_reborn:" .. name,
-					})
+				--Replace 1 with width values
+				for i = 1, #nodebox do
+					for j = 1, #nodebox[i] do
+						local val = nodebox[i][j]
+						if val == 1 then val = data.size/16/2
+						elseif val == -1 then val = -data.size/16/2 end
+						nodebox[i][j] = val
+					end 
 				end
 
+				minetest.register_node("tech_reborn:" .. cname, {
+					description = data.description,
+					tiles = {tex},
+					groups = groups,
+					sounds = default.node_sound_metal_defaults(),
+					on_construct = tech_reborn.wire.constructWire,
+					on_destruct = tech_reborn.wire.removeWire,
+					on_rightclick = tech_reborn.wire.showOverlayOpts,
+					paramtype2 = "facedir",
+					drawtype = "nodebox",
+					paramtype = "light",
+					node_box = {
+						type = "fixed",
+						fixed = nodebox
+					},
+					node_placement_prediction = "tech_reborn:" .. name,
+					drop = "tech_reborn:" .. name .. "_line",
+
+					_base_node = "tech_reborn:" .. name,
+					_base_name = "tech_reborn:" .. name,
+					_voltage = data.voltage,
+					_wire_size = data.size,
+				})
 			end
+
 		end
 	end
 
@@ -143,3 +107,13 @@ tech_reborn.register_wires("gold_wire", {
 	damage_for_second = 0,
 	size = 4
 })
+
+-- tech_reborn.register_wires("item_pipe", {
+-- 	description = "Item Pipe",
+-- 	base_node = "tech_reborn:insulated_gold_wire",
+-- 	voltage = "mv",
+-- 	tex_insulated = "tech_reborn_pipe.png",
+-- 	tex_base = "tech_reborn_pipe.png",
+-- 	damage_for_second = 0,
+-- 	size = 8
+-- })

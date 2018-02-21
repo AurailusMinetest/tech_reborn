@@ -6,6 +6,7 @@ dofile(path .. "/file.lua")
 dofile(path .. "/functions.lua")
 dofile(path .. "/energy-transfer.lua")
 dofile(path .. "/nodes.lua")
+dofile(path .. "/entity.lua")
 
 --DEBUG--
 --Disable in production

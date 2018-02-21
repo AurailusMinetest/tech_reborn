@@ -1,15 +1,129 @@
-function tech_reborn.wire.changeState(pos, node, clicker, itemstack, pointed_thing)
+function tech_reborn.wire.wireConnectable(pos_a, pos_b)
+	local def = minetest.registered_nodes[minetest.get_node(pos_b).name]
+	local base_node = def._base_node
+	if minetest.get_item_group(minetest.get_node(pos_a).name, "wire") > 0 then
+		local def = minetest.registered_nodes[minetest.get_node(pos_a).name]
+		if def._base_node == base_node then
+			return true
+		else
+			return false
+		end
+	end
+	return false
+end
+
+function tech_reborn.wire.removeIO(pos)
+	local function get_remove(pos)
+		return (minetest.get_item_group(minetest.get_node(pos).name, "wire_connect") > 0)
+	end
+	local function starts(String,Start)
+	  return string.sub(String,1,string.len(Start)) == Start
+	end
+
+	local adjacent = tech_reborn.getAdjacent(pos)
+	local dirs = {
+		u = get_remove(adjacent[1]),
+		d = get_remove(adjacent[2]),
+		e = get_remove(adjacent[3]),
+		w = get_remove(adjacent[4]),
+		n = get_remove(adjacent[5]),
+		s = get_remove(adjacent[6]),
+	}
+	
+	for _,obj in pairs(minetest.get_objects_inside_radius(pos, 1.3)) do
+		if obj:get_luaentity() then
+			if obj:get_luaentity().basenode == tech_reborn.serializepos(pos) then
+				if starts(obj:get_luaentity().name, "tech_reborn:servo_") then
+					if not dirs[obj:get_luaentity().dir] then
+						obj:remove()
+					end
+				end
+			end
+		end
+	end
+
+end
+
+function tech_reborn.wire.spawnEntities(name, pos, dirs, size)
+	local dmod = {
+		[8] = 0.346,
+		[6] = 0.374,
+		[4] = 0.410,
+		[2] = 0.454,
+	}
+	name = name .. "_"
+
+	if dirs.u then
+		local object = minetest.add_entity(pos, "tech_reborn:servo_" .. name .. size .. "_y", minetest.serialize({
+			basenode = tech_reborn.serializepos(pos),
+			dir = "u"
+		}))
+		object:setpos({x=pos.x, y=pos.y+dmod[size], z=pos.z})
+	end
+	if dirs.d then
+		local object = minetest.add_entity(pos, "tech_reborn:servo_" .. name .. size .. "_y", minetest.serialize({
+			basenode = tech_reborn.serializepos(pos),
+			dir = "d"
+		}))
+		object:setpos({x=pos.x, y=pos.y-dmod[size], z=pos.z})
+	end
+	if dirs.e then
+		local object = minetest.add_entity(pos, "tech_reborn:servo_" .. name .. size .. "_x", minetest.serialize({
+			basenode = tech_reborn.serializepos(pos),
+			dir = "e"
+		}))
+		object:setpos({x=pos.x+dmod[size], y=pos.y, z=pos.z})
+	end
+	if dirs.w then
+		local object = minetest.add_entity(pos, "tech_reborn:servo_" .. name .. size .. "_x", minetest.serialize({
+			basenode = tech_reborn.serializepos(pos),
+			dir = "w"
+		}))
+		object:setpos({x=pos.x-dmod[size], y=pos.y, z=pos.z})
+	end
+	if dirs.n then
+		local object = minetest.add_entity(pos, "tech_reborn:servo_" .. name .. size .. "_z", minetest.serialize({
+			basenode = tech_reborn.serializepos(pos),
+			dir = "n"
+		}))
+		object:setpos({x=pos.x, y=pos.y, z=pos.z+dmod[size]})
+	end
+	if dirs.s then
+		local object = minetest.add_entity(pos, "tech_reborn:servo_" .. name .. size .. "_z", minetest.serialize({
+			basenode = tech_reborn.serializepos(pos),
+			dir = "s"
+		}))
+		object:setpos({x=pos.x, y=pos.y, z=pos.z-dmod[size]})
+	end
+end
+
+function tech_reborn.wire.showOverlayOpts(pos, node, clicker, itemstack, pointed_thing)
 	if clicker:get_wielded_item():get_name() == "tech_reborn:wrench" then
 		local def = minetest.registered_nodes[minetest.get_node(pos).name]
 		if not def then return false end
+		local n = tonumber(def._wire_size)
+		if not n then return false end
 
-		local estate = def._export_state
-		if estate == "none" then mstring = "_import"
-		elseif estate == "import" then mstring = "_export"
-		elseif estate == "export" then mstring = "" end
+		local function get_connect(pos_a, pos_b)
+			local def = minetest.registered_nodes[minetest.get_node(pos_b).name]
+			local base_node = def._base_node
+			if minetest.get_item_group(minetest.get_node(pos_a).name, "wire_connect") > 0 then
+				return true
+			end
+			return false
+		end
 
-		minetest.swap_node(pos, {name = def._base_node .. mstring})
-		tech_reborn.wire.recalcModels(pos)
+		local adjacent = tech_reborn.getAdjacent(pos)
+		local dirs = {
+			u = get_connect(adjacent[1], pos),
+			d = get_connect(adjacent[2], pos),
+			e = get_connect(adjacent[3], pos),
+			w = get_connect(adjacent[4], pos),
+			n = get_connect(adjacent[5], pos),
+			s = get_connect(adjacent[6], pos),
+		}
+
+		tech_reborn.wire.spawnEntities("preview", pos, dirs, n)
 	else
 		minetest.item_place_node(itemstack, clicker, pointed_thing)
 	end
@@ -24,8 +138,11 @@ function tech_reborn.wire.consumeSystem(newSys, oldSys)
 	if newSys and newSys ~= "" and oldSys and oldSys ~= "" and
 	tech_reborn.wire.systems[newSys] ~= nil and tech_reborn.wire.systems[oldSys] ~= nil then
 		local children = tech_reborn.wire.systems[oldSys].children
+		local altChildcount = tech_reborn.wire.systems[oldSys].childcount
 		local altPower = tech_reborn.wire.systems[oldSys].power
 		tech_reborn.wire.systems[newSys].power = tech_reborn.wire.systems[newSys].power + altPower
+		tech_reborn.wire.systems[newSys].childcount = tech_reborn.wire.systems[newSys].childcount + altChildcount
+		tech_reborn.wire.systems[newSys].capacity = tech_reborn.wire.systems[newSys].childcount * 50
 
 		tech_reborn.wire.systems[oldSys] = nil
 
@@ -47,12 +164,14 @@ function tech_reborn.wire.createWire(pos)
 	local found = false
 	for i = 1, #adjacent do
 		local node = adjacent[i]
-		if minetest.get_item_group(minetest.get_node(node).name, "wire") > 0 then
+		if tech_reborn.wire.wireConnectable(pos, node) then
 			local id = minetest.get_meta(node):get_string("sys_id")
 			if id and id ~= "" then
 				if not found then
 					minetest.get_meta(pos):set_string("sys_id", id)
 					tech_reborn.wire.systems[id].children[tech_reborn.serializepos(pos)] = true
+					tech_reborn.wire.systems[id].childcount = tech_reborn.wire.systems[id].childcount + 1
+					tech_reborn.wire.systems[id].capacity = tech_reborn.wire.systems[id].childcount * 50
 					tech_reborn.wire.save_systems()
 					found = id
 				else 
@@ -70,9 +189,10 @@ function tech_reborn.wire.createWire(pos)
 	minetest.get_meta(pos):set_string("sys_id", id)
 	tech_reborn.wire.systems[id] = {
 		id = id,
+		childcount = 1,
 		children = {},
 		power = 0,
-		capacity = 1000
+		capacity = 50
 	}
 	tech_reborn.wire.systems[id].children[tech_reborn.serializepos(pos)] = true
 	tech_reborn.wire.save_systems()
@@ -80,6 +200,21 @@ function tech_reborn.wire.createWire(pos)
 end
 
 function tech_reborn.wire.removeWire(pos)
+	local function starts(String,Start)
+	  return string.sub(String,1,string.len(Start)) == Start
+	end
+
+	--Remove Entities
+	for _,obj in pairs(minetest.get_objects_inside_radius(pos, 1.3)) do
+		if obj:get_luaentity() then
+			if obj:get_luaentity().basenode == tech_reborn.serializepos(pos) then
+				if starts(obj:get_luaentity().name, "tech_reborn:servo_") then
+					obj:remove()
+				end
+			end
+		end
+	end
+
 	local id = minetest.get_meta(pos):get_string("sys_id")
 
 	minetest.after(0, function(pos, id)
