@@ -6,5 +6,5 @@ A new technic mod that adds exciting machines to your minetes world.
 
 ### Aurailus
 Mod Author
-### Harry
+### Hailey
 Came up with the name
